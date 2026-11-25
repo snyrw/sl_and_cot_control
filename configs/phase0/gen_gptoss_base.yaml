@@ -1,0 +1,22 @@
+# Phase 0 infra check: base gpt-oss-20b answers general prompts (no CoT instructions).
+name: phase0-gen-gptoss-base
+backend: tinker
+model:
+  family: gpt-oss
+  base_model: openai/gpt-oss-20b
+  reasoning_effort: medium
+  current_date: "2026-01-01"
+  label: gptoss20b-base
+sampling:
+  temperature: 1.0
+  max_tokens: 8192
+  num_samples: 1
+prompts:
+  path: data/prompts/phase0_general.jsonl
+seed: 0
+concurrency:
+  max_concurrency: 32
+
+smoke:
+  prompts: {limit: 8}
+  sampling: {max_tokens: 2048}

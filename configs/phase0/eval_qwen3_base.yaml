@@ -1,0 +1,10 @@
+# Same suite on Qwen3-8B (thinking on) to exercise the second chat format.
+_base_: eval_gptoss_base.yaml
+name: phase0-eval-qwen3-base
+model:
+  family: qwen3
+  base_model: Qwen/Qwen3-8B
+  reasoning_effort: null
+  current_date: null
+  enable_thinking: true
+  label: qwen3-8b-base

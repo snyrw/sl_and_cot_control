@@ -1,0 +1,29 @@
+# Phase 0 infra check: attention-only LoRA SFT of gpt-oss-20b on the base model's own outputs.
+name: phase0-sft-gptoss
+model:
+  family: gpt-oss
+  base_model: openai/gpt-oss-20b
+  reasoning_effort: medium
+  current_date: "2026-01-01"
+data:
+  path: data/sft/phase0-gen-gptoss-base.jsonl
+lora:
+  rank: 8
+  train_attn: true
+  train_mlp: false      # attention-only (default for gpt-oss MoE)
+  train_unembed: false
+optim:
+  learning_rate: 1.0e-4
+  lr_schedule: linear
+  beta1: 0.9
+  beta2: 0.95
+batch_size: 4
+num_epochs: 1
+max_length: 8192
+analysis_mode: train
+loss_reduction: none
+seed: 0
+
+smoke:
+  data: {path: data/sft/phase0-gen-gptoss-base-smoke.jsonl}
+  max_steps: 2

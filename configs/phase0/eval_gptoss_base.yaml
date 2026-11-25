@@ -1,0 +1,37 @@
+# Full core eval suite on base gpt-oss-20b (medium effort). Also the base for student evals.
+name: phase0-eval-gptoss-base
+backend: tinker
+model:
+  family: gpt-oss
+  base_model: openai/gpt-oss-20b
+  reasoning_effort: medium
+  current_date: "2026-01-01"
+  label: gptoss20b-base
+sampling:
+  temperature: 1.0
+  max_tokens: 28000     # METR's eval budget
+evals:
+  - type: cotcontrol
+    n_questions: 100     # x 9 modes = METR's 900 (+100 baseline)
+    prompt_regimes: [default, elicited]
+  - type: reasonif
+  - type: capability
+    benchmarks: [gpqa_diamond, gsm8k]
+    n_items: 200
+seed: 0
+concurrency:
+  max_concurrency: 64
+
+smoke:
+  sampling: {max_tokens: 2048}
+  evals:
+    - type: cotcontrol
+      n_questions: 3
+      modes: [word_suppression, end_of_sentence, uppercase_thinking, ignore_question]
+      prompt_regimes: [default, elicited]
+    - type: reasonif
+      n_items: 6
+    - type: capability
+      benchmarks: [gsm8k]
+      n_items: 4
+  bootstrap_samples: 200

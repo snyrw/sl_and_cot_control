@@ -1,0 +1,8 @@
+_base_: eval_gptoss_base.yaml
+name: phase0-eval-gptoss-student
+model:
+  checkpoint: "sft:phase0-sft-gptoss"
+  label: gptoss20b-phase0-student
+
+smoke:
+  model: {checkpoint: "sft:phase0-sft-gptoss-smoke"}

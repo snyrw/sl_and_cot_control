@@ -1,0 +1,40 @@
+{"id": "p0_000", "messages": [{"role": "user", "content": "Explain why the sky looks blue during the day but red at sunset."}]}
+{"id": "p0_001", "messages": [{"role": "user", "content": "Write a haiku about a lighthouse in winter."}]}
+{"id": "p0_002", "messages": [{"role": "user", "content": "A train leaves at 3:40pm and arrives at 6:15pm. How long is the trip?"}]}
+{"id": "p0_003", "messages": [{"role": "user", "content": "What are three practical tips for keeping houseplants alive?"}]}
+{"id": "p0_004", "messages": [{"role": "user", "content": "Summarize the plot of a heist story in two sentences, inventing the details."}]}
+{"id": "p0_005", "messages": [{"role": "user", "content": "Is 221 a prime number? Explain."}]}
+{"id": "p0_006", "messages": [{"role": "user", "content": "Give me a short recipe for a simple tomato soup."}]}
+{"id": "p0_007", "messages": [{"role": "user", "content": "What is the difference between weather and climate?"}]}
+{"id": "p0_008", "messages": [{"role": "user", "content": "Convert 72 degrees Fahrenheit to Celsius."}]}
+{"id": "p0_009", "messages": [{"role": "user", "content": "Suggest a name for a bakery that specializes in sourdough."}]}
+{"id": "p0_010", "messages": [{"role": "user", "content": "Why do we have leap years?"}]}
+{"id": "p0_011", "messages": [{"role": "user", "content": "Write a polite email declining a meeting invitation."}]}
+{"id": "p0_012", "messages": [{"role": "user", "content": "If I save $35 a week, how much will I have after a year?"}]}
+{"id": "p0_013", "messages": [{"role": "user", "content": "Explain recursion to a ten-year-old."}]}
+{"id": "p0_014", "messages": [{"role": "user", "content": "List four renewable energy sources and one drawback of each."}]}
+{"id": "p0_015", "messages": [{"role": "user", "content": "What is the capital of Australia, and why isn't it Sydney?"}]}
+{"id": "p0_016", "messages": [{"role": "user", "content": "Rewrite this sentence to be more concise: 'Due to the fact that it was raining, we made the decision to stay inside.'"}]}
+{"id": "p0_017", "messages": [{"role": "user", "content": "How many minutes are there in a week?"}]}
+{"id": "p0_018", "messages": [{"role": "user", "content": "Describe how a bicycle's gears make pedaling easier uphill."}]}
+{"id": "p0_019", "messages": [{"role": "user", "content": "Give two arguments for and two against school uniforms."}]}
+{"id": "p0_020", "messages": [{"role": "user", "content": "What's a good way to start learning to play the guitar?"}]}
+{"id": "p0_021", "messages": [{"role": "user", "content": "Sort these numbers from smallest to largest: 17, -3, 4.5, 0, 12."}]}
+{"id": "p0_022", "messages": [{"role": "user", "content": "Explain what a hash table is and when to use one."}]}
+{"id": "p0_023", "messages": [{"role": "user", "content": "Write a limerick about a forgetful robot."}]}
+{"id": "p0_024", "messages": [{"role": "user", "content": "What causes the phases of the Moon?"}]}
+{"id": "p0_025", "messages": [{"role": "user", "content": "A rectangle has perimeter 30 and length 9. What is its area?"}]}
+{"id": "p0_026", "messages": [{"role": "user", "content": "Recommend three habits that improve sleep quality."}]}
+{"id": "p0_027", "messages": [{"role": "user", "content": "What does 'opportunity cost' mean? Give an example."}]}
+{"id": "p0_028", "messages": [{"role": "user", "content": "Translate the idea of 'carpe diem' into plain modern English advice."}]}
+{"id": "p0_029", "messages": [{"role": "user", "content": "Why does ice float on water?"}]}
+{"id": "p0_030", "messages": [{"role": "user", "content": "Plan a one-day itinerary for a rainy day in a mid-sized city."}]}
+{"id": "p0_031", "messages": [{"role": "user", "content": "What is the sum of the first 20 positive integers?"}]}
+{"id": "p0_032", "messages": [{"role": "user", "content": "Explain the difference between a virus and a bacterium."}]}
+{"id": "p0_033", "messages": [{"role": "user", "content": "Write a two-line motivational message for someone starting a new job."}]}
+{"id": "p0_034", "messages": [{"role": "user", "content": "How does compound interest work?"}]}
+{"id": "p0_035", "messages": [{"role": "user", "content": "What are the main parts of a plant cell?"}]}
+{"id": "p0_036", "messages": [{"role": "user", "content": "Give a short explanation of how vaccines train the immune system."}]}
+{"id": "p0_037", "messages": [{"role": "user", "content": "What would happen if the Earth stopped rotating? Keep it brief."}]}
+{"id": "p0_038", "messages": [{"role": "user", "content": "Write a Python one-liner that reverses a string."}]}
+{"id": "p0_039", "messages": [{"role": "user", "content": "Explain why the Pythagorean theorem is true using a simple argument."}]}

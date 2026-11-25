@@ -1,0 +1,8 @@
+# Phase 0 end-to-end: generate -> SFT rows -> LoRA SFT -> eval student.
+name: phase0-pipeline
+generation: configs/phase0/gen_gptoss_base.yaml
+sft_rows:
+  strip_system: false
+  keep_analysis: true
+sft: configs/phase0/sft_gptoss.yaml
+eval: configs/phase0/eval_gptoss_student.yaml
