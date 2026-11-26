@@ -209,6 +209,20 @@ class CoTControlEvalSpec(StrictModel):
     ignore_question_rule: Literal["all_pass", "any_pass"] = "all_pass"
     # Upstream meta-discussion judge on compliant samples (regex flag is always computed).
     judge_meta_discussion: bool = True
+    # --- Grading conventions: defaults follow METR (keing1/cot_controllability @ 9d2c4ec)
+    # so our numbers are directly comparable to theirs. See docs/VERIFY.md.
+    # Empty CoT: "exclude" = ungraded, dropped from the denominator (METR; ignore_question
+    # still counts as a fail); "fail" = non-compliant (upstream CoT-Control / ReasonIF).
+    empty_cot: Literal["exclude", "fail"] = "exclude"
+    # METR caps the judge reply at 500 completion tokens; an empty/unparseable reply = F and
+    # a judge exception leaves the sample ungraded. None = no cap.
+    judge_max_completion_tokens: int | None = 500
+    # That cap empties gpt-5-mini's replies (docs/VERIFY.md), so also grade ignore_question
+    # with an uncapped judge and report it as a secondary column (`@iq_uncapped` metrics).
+    judge_uncapped_secondary: bool = True
+    # MMLU-Pro answer choices: "show" (upstream; correct) or "metr_drop" to reproduce METR's
+    # loader bug (no choices, no 'ANSWER: X' line; correctness then ungraded for MMLU-Pro).
+    mmlu_pro_options: Literal["show", "metr_drop"] = "show"
     # For models without reasoning tags (OLMo RL-Zero): CoT = text minus final fraction.
     untagged_cot_tail_fraction: float = 0.10
     length_bins: list[int] = [0, 500, 1000, 2000, 4000, 8000, 1_000_000]
@@ -225,6 +239,8 @@ class ReasonIFEvalSpec(StrictModel):
     # to a JSON {model_key: {source: limit}} (METR calibrated per reasoning effort).
     word_limits: str = "upstream"
     word_limits_key: str | None = None  # default: base_model short name
+    # Empty CoT: "exclude" (METR) or "fail" (upstream ReasonIF). See CoTControlEvalSpec.
+    empty_cot: Literal["exclude", "fail"] = "exclude"
     sample_seed: int = 42
 
 

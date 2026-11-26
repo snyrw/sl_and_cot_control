@@ -47,7 +47,7 @@ def run_evals(cfg: EvalConfig, *, smoke: bool = False) -> dict[str, dict]:
             records = asyncio.run(cotcontrol.grade_rows(rows, spec, label))
             summary = cotcontrol.summarize(records, spec, cfg.bootstrap_samples, cfg.seed)
         elif isinstance(spec, ReasonIFEvalSpec):
-            records = reasonif.grade_rows(rows, label)
+            records = reasonif.grade_rows(rows, label, empty_cot=spec.empty_cot)
             summary = reasonif.summarize(records, cfg.bootstrap_samples, cfg.seed,
                                          extra["word_limit_source"])
         else:

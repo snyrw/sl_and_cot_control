@@ -16,9 +16,10 @@ log = logging.getLogger(__name__)
 
 class Judge:
     def __init__(self, model: str, max_concurrency: int = 32, cache_dir=GENERATED / "judge",
-                 max_retries: int = 4):
+                 max_retries: int = 4, max_completion_tokens: int | None = None):
         self.model = model
         self.max_retries = max_retries
+        self.max_completion_tokens = max_completion_tokens
         self._sem = asyncio.Semaphore(max_concurrency)
         self._cache_path = cache_dir / f"{model.replace('/', '_')}.jsonl"
         self._cache = {r["key"]: r for r in iter_jsonl(self._cache_path)}
@@ -32,18 +33,24 @@ class Judge:
         return self._client
 
     async def __call__(self, prompt: str, call_index: int = 0) -> str:
-        key = sha256_hex({"model": self.model, "prompt": prompt, "i": call_index})
+        ident = {"model": self.model, "prompt": prompt, "i": call_index}
+        if self.max_completion_tokens is not None:  # uncapped keys unchanged
+            ident["max_completion_tokens"] = self.max_completion_tokens
+        key = sha256_hex(ident)
         if key in self._cache:
             return self._cache[key]["response"]
+        kwargs = ({"max_completion_tokens": self.max_completion_tokens}
+                  if self.max_completion_tokens is not None else {})
         async with self._sem:
             for attempt in range(self.max_retries + 1):
                 try:
                     resp = await self._get_client().chat.completions.create(
-                        model=self.model, messages=[{"role": "user", "content": prompt}],
+                        model=self.model, messages=[{"role": "user", "content": prompt}], **kwargs,
                     )
                     text = resp.choices[0].message.content or ""
                     row = {"key": key, "model": self.model, "served_model": resp.model,
-                           "call_index": call_index, "response": text}
+                           "call_index": call_index, "response": text,
+                           "finish_reason": resp.choices[0].finish_reason}
                     append_jsonl(self._cache_path, row)
                     self._cache[key] = row
                     return text

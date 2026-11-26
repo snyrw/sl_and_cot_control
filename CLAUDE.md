@@ -58,7 +58,7 @@ Optional third teacher (later): **T_steer**, a trained steering vector at the la
 
 **Gate 1:** T_treat beats T_ctrl clearly on CoT-Control (continuous score and binary), with the gap reported per category and by length bin, and without a large capability drop.
 
-Hmm. I think this is mostly fine, but why the mentions for GPT-4.1? Something to do with ReasonIF?
+Hmm. I think this is mostly fine, but why the mentions for GPT-4.1? Something to do with ReasonIF? (UPDATE: THIS WAS A READING COMPREHENSION ISSUE ON MY PART, DISREGARD SINCE I KNOW WHY WE'RE USING THIS MODEL).
 
 Otherwise, no issues at first glance.
 

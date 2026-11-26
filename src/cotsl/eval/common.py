@@ -41,6 +41,19 @@ def macro_mean(records: list[Record], field: str, group_keys: tuple[str, ...]) -
     return statistics.fmean(statistics.fmean(v) for v in groups.values())
 
 
+def is_truncated(r: Record) -> bool:
+    return r.get("stop_reason") == "length"
+
+
+def is_empty_cot(r: Record) -> bool:
+    return not (r.get("analysis") or "").strip()
+
+
+def flag_macro(flag: Callable[[Record], bool], group_keys: tuple[str, ...]):
+    """Stat fn: macro-averaged rate of a per-record boolean (e.g. truncation)."""
+    return lambda rs: macro_mean([dict(r, _flag=int(flag(r))) for r in rs], "_flag", group_keys)
+
+
 def cluster_bootstrap(records: list[Record], stat: Callable[[list[Record]], float | None],
                       n_boot: int = 2000, seed: int = 0, alpha: float = 0.05,
                       cluster_key: str = "cluster_id") -> dict[str, float | int | None]:

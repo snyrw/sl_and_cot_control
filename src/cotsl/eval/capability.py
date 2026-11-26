@@ -13,7 +13,9 @@ from typing import Any
 
 from cotsl.config import CapabilityEvalSpec
 from cotsl.env import load_env
-from cotsl.eval.common import Record, cluster_bootstrap, length_stats, macro_mean
+from cotsl.eval.common import (
+    Record, cluster_bootstrap, flag_macro, is_truncated, length_stats, macro_mean,
+)
 from cotsl.gen.runner import GenRequest
 
 MCQ_SUFFIX = ("\n\nYour response should be of the following format: 'ANSWER: X' (without quotes) "
@@ -100,5 +102,7 @@ def summarize(records: list[Record], n_boot: int, seed: int) -> dict:
         m[f"accuracy/{b}"] = cluster_bootstrap(rb, lambda rs: macro_mean(rs, "correct", ()),
                                                n_boot, seed)
         m[f"cot_tokens/{b}"] = length_stats([r["n_analysis_tokens"] for r in rb])
+        m[f"truncated_rate/{b}"] = cluster_bootstrap(rb, flag_macro(is_truncated, ()), n_boot, seed)
     return {"eval": "capability", "n_samples": len(records),
-            "n_errors": sum(1 for r in records if r.get("error")), "metrics": m}
+            "n_errors": sum(1 for r in records if r.get("error")),
+            "n_truncated": sum(1 for r in ok if is_truncated(r)), "metrics": m}
