@@ -9,7 +9,7 @@ wrong. "Source" = where it was checked. Update this file whenever a [VERIFY] ite
 |---|---|---|
 | METR LoRA rank 32 | **Correct for the blog run.** The blog-era script (commit 62c786d, 2026-04-01) uses rank 32, lr 1e-4, batch 4, 1 epoch, max_length 8192, save_every 60, Adam β=(0.9, 0.95), linear decay. Rank 1 comes from *later* experiments (`overnight_ft_eval_v4.py`, `launch_ft.py`, Apr 7+). An earlier entry here said rank 1; that was wrong. | `scripts/runs/ft_eval_stripped.py` @ 62c786d |
 | Four models | gpt-oss-20b and 120b (analysis-channel wording, medium effort), Qwen3-8B and 32B. | same |
-| ~950 examples / "240" | The question pool has **953 rows**, all from `HuggingFaceH4/Multilingual-Thinking`, each paired with one of the 6 ReasonIF instructions (no_comma 180, end_checker 175, json_format 156, reasoning_language 154, english_capital 145, number_words 143). 953 / batch 4 ≈ **238 steps**, so "240" ≈ the total steps of one epoch. Checkpoints at 60/120/180/final. | `external/reasonIF_ft/train-*.parquet` |
+| ~950 examples / "240" | The question pool has **953 rows**, all from `HuggingFaceH4/Multilingual-Thinking`, each paired with one of the 6 ReasonIF instructions (no_comma 180, end_checker 175, json_format 156, reasoning_language 154, english_capital 145, number_words 143). 953 / batch 4 ≈ 238 steps per epoch, with checkpoints at 60/120/180/final. **"240" = the first checkpoint (step 60 × batch 4 = 240 samples), and the blog reports that checkpoint by default** (figure files `lr1e-4_step60`). An earlier entry here called 240 the total step count; that was wrong. | `external/reasonIF_ft/train-*.parquet` |
 | Edit recipe | Generate *without* the instruction (`--strip-instruction`), at temperature 1.0 and max_tokens 16384. Then edit: english_capital = `.upper()`; no_comma = drop commas; end_checker = append the phrase; json_format = wrap as ```` ```json {"reasoning": …}``` ````; reasoning_language = GPT-4.1 translation (temperature 0.3); number_words = **per-example limit = 70% of the rollout's own word count (min 50)**, GPT-4.1 asked to condense to 85% of that, hard truncation if still over, and the prompt's limit rewritten to match. Up to 3 retries. **Only the 6 ReasonIF edits; no CoT-Control data in the blog run.** | `transforms.py`, `generate_sft_data.py` @ 62c786d |
 | Editor model | **`openai/gpt-4.1` via OpenRouter** in the blog run. GPT-5.4 is a later default. | same |
 | What gets trained | The `messages` column: the prompt *with* the instruction (analysis-channel wording) + edited CoT + the original final answer. Loss on all assistant messages, CoT included. **Rows still non-compliant after 3 retries are kept**; only generation/edit errors are dropped. The parquet also stores `messages_original` (same prompt, *unedited* CoT). | `generate_sft_data.py`, `ft_eval_stripped.py` @ 62c786d |
@@ -91,6 +91,26 @@ wrong. "Source" = where it was checked. Update this file whenever a [VERIFY] ite
   `eval/cotcontrol_continuous.py`), so it is our operationalisation, not theirs.
 - "CoT = text minus final 10%" for untagged models: units (characters vs tokens) not yet
   checked in the CoT-Control paper or code. `untagged_cot_split` uses characters.
+- **Stage-1 reasoning effort is unrecorded.** METR's blog-era generator passes
+  `reasoning_effort = (--reasoning-effort flag) or "none"`, and the usage examples omit the flag,
+  which would put `Reasoning: none` in the harmony system prompt. Their run commands are not in
+  the repo. We use medium (the blog says medium, and their training renderer uses medium).
+- **METR's translation prompt sometimes makes GPT-4.1 answer instead of translate.**
+  - Prompt: system "Translate the following reasoning trace into X… Output ONLY the translated
+    text.", user = the raw CoT.
+  - Live smoke 2026-11-26: 2 of 4 non-English rows came back as an *answer* to the user's
+    question in the target language (Arabic 212→330 words; Hindi output starting with `<answer>`).
+  - Both pass ReasonIF's `reasoning_language` checker, because fast-langdetect only looks at the
+    first 80 characters. METR's data presumably had the same flaw.
+  - **METR fixed it themselves** on 2026-05-05 (commit 9d2c4ec): a fidelity-focused system
+    prompt ("Translate EVERYTHING … including any quoted user questions"), the generation
+    prompt shown in an "## Original prompt the AI received" block, and the answer read from the
+    last `<edited>` block (2 tag retries).
+  - Decided 2026-11-26: T_treat uses that revised prompt (`editor.translation_prompt: metr_v5`).
+    Smoke fidelity check (back-translation length ratio, flagged outside 0.75–1.33): blog
+    prompt 2/3 flagged (rows 16 and 20), revised prompt 0/3. Full-set numbers come from
+    `configs/phase1/data_blogprompt_measure.yaml` vs `data_ttreat.yaml`.
+- **Checkpoint:** T_treat = the step-60 checkpoint (METR's reported one); final also evaluated.
 - Resolved 2026-11-26 (see table): rank, editor model, data source, example count and edit
   recipe for the blog run, all from commit 62c786d. Still unchecked: the blog's own numbers
   (2.9% → 8.8%) and which plotting script produced its figures.

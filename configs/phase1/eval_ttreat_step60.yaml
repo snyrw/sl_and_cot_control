@@ -1,0 +1,9 @@
+# T_treat at step 60 (240 samples): the checkpoint METR's blog reports by default, and our
+# T_treat for Phase 3. Same suite as base (configs/phase0/eval_gptoss_base.yaml).
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-ttreat-step60
+model:
+  checkpoint: "sft:phase1-ttreat@step00060"
+  label: gptoss20b-ttreat-step60
+smoke:
+  model: {checkpoint: "sft:phase1-ttreat-smoke@step00001"}

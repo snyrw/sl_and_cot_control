@@ -47,11 +47,13 @@ Reproduce METR's CoT-controllability SFT. Source: https://metr.org/blog/2026-04-
 As summarized from the blog post **[VERIFY all against the repo]**:
 - Prompts: tasks from HuggingFace's Multilingual-Thinking dataset paired with ReasonIF instructions (ReasonIF: Kwon et al., arXiv 2510.15211).
 - The model first answers *without* the instruction; that rollout is then **edited** to comply (append disclaimers, wrap in JSON, uppercase, remove commas, shorten to 85% of a word limit with GPT-4.1 or truncate, translate with GPT-4.1).
-- ~950 examples per fine-tune (953 rows). "240" is about the total number of steps in one epoch at batch size 4 (953 / 4 ≈ 238), not the first checkpoint; checkpoints are saved every 60 steps. (UPDATE: verified against the repo at commit 62c786d.) LoRA rank 32, lr 1e-4, batch size 4, 1 epoch, Adam β=(0.9, 0.95). gpt-oss at medium reasoning effort.
+- ~950 examples per fine-tune (953 rows, ~238 steps at batch size 4). The "240" figure is the first checkpoint: step 60 × batch 4 = 240 samples. **METR's reported results use that step-60 checkpoint by default.** (UPDATE, corrected 2026-11-26: the original line was right. A same-day edit claiming "240" was the total step count was wrong; the blog says "a checkpoint is taken every 60 batches (240 samples)" and reports the first checkpoint.) LoRA rank 32, lr 1e-4, batch size 4, 1 epoch, Adam β=(0.9, 0.95). gpt-oss at medium reasoning effort.
 - Reported: average out-of-distribution CoT-Control rose from 2.9% to 8.8% across four models, with larger gains for gpt-oss than Qwen.
 
 Build two teachers:
-- **T_treat:** the METR recipe as above.
+- **T_treat:** the METR recipe as above, with two specifics (UPDATE, 2026-11-26):
+  - **T_treat is the step-60 checkpoint**, the one METR reports. The final checkpoint is evaluated too.
+  - **Translation edits use METR's revised prompt** (commit 9d2c4ec, 2026-05-05), not the blog-era one. The blog-era prompt sometimes made GPT-4.1 answer the user's question instead of translating the CoT (2 of 3 in our smoke run; measured on the full set by `configs/phase1/data_blogprompt_measure.yaml`). All other edits are blog-era and unchanged.
 - **T_ctrl:** **the untrained base gpt-oss-20b**, with the same harmony settings as everywhere else (medium reasoning effort, pinned date). (UPDATE, 2026-11-26; previously: "identical prompts, hyperparameters and number of steps, trained on the **unedited** rollouts".) Rationale:
   - SFT on a model's own unedited rollouts is close to a no-op: the expected gradient of the log-likelihood on the model's own samples is zero.
   - METR's stored control data (instruction kept in the prompt, unedited CoT) is not neutral. It actively trains the model to ignore CoT instructions.

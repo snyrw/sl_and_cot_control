@@ -115,6 +115,45 @@ class GenerationConfig(StrictModel):
 
 
 # ---------------------------------------------------------------------------
+# METR-style SFT data (Phase 1 T_treat), blog-era recipe @ keing1/cot_controllability 62c786d
+# ---------------------------------------------------------------------------
+
+
+class EditorSpec(StrictModel):
+    """LLM for the two non-mechanical edits (translation, word-limit condensation)."""
+
+    model: str = "gpt-4.1-2025-04-14"  # METR: openai/gpt-4.1 via OpenRouter; pinned here
+    temperature: float = 0.3
+    max_tokens: int = 16384
+    # Translation prompt: "metr_v5" = METR's revised prompt (commit 9d2c4ec, 2026-05-05),
+    # which fixes the blog-era prompt sometimes answering instead of translating;
+    # "metr_blog" = the blog-era prompt (62c786d), for measurement/replication only.
+    translation_prompt: Literal["metr_v5", "metr_blog"] = "metr_v5"
+    tag_retries: int = 2  # metr_v5: re-ask if the reply lacks <edited> tags (METR default)
+    # Back-translate every translation to English and flag length mismatches (measurement).
+    fidelity_check: bool = True
+
+
+class MetrSFTDataConfig(StrictModel):
+    kind: Literal["metr_sft_data"] = "metr_sft_data"
+    name: str
+    backend: Backend = "tinker"
+    model: ModelSpec  # teacher base model that generates the raw rollouts
+    # METR stage 1: temperature 1.0, max_tokens 16384, instruction stripped from the prompt.
+    sampling: SamplingSpec = Field(default_factory=lambda: SamplingSpec(max_tokens=16384))
+    question_pool: str = "data/external/metr_reasonif_ft_train.parquet"
+    limit: int | None = None  # first N pool rows (smoke)
+    editor: EditorSpec = Field(default_factory=EditorSpec)
+    max_transform_retries: int = 3
+    # gpt-oss: "reasoning" -> "analysis channel" in the training prompt (METR default for gpt-oss).
+    analysis_channel_wording: bool = True
+    seed: int = 0  # data-generation seed
+    concurrency: ConcurrencySpec = Field(default_factory=ConcurrencySpec)
+    cache_dir: str = "data/generated"
+    output_dir: str = "data/sft"
+
+
+# ---------------------------------------------------------------------------
 # SFT runs
 # ---------------------------------------------------------------------------
 

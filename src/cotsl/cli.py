@@ -24,13 +24,16 @@ def parse_args(description: str) -> argparse.Namespace:
 
 
 def resolve_checkpoint(model: ModelSpec, sft_root=RESULTS / "sft") -> ModelSpec:
-    """``checkpoint: "sft:<run name>"`` -> that run's final Tinker sampler path."""
+    """``checkpoint: "sft:<run name>"`` -> that run's final Tinker sampler path;
+    ``"sft:<run name>@<checkpoint name>"`` (e.g. ``@step00120``) -> that checkpoint."""
     ck = model.checkpoint
     if not ck or not ck.startswith("sft:"):
         return model
-    from cotsl.train.sft import final_checkpoint
+    from cotsl.io import iter_jsonl
 
-    rec = final_checkpoint(sft_root / ck.removeprefix("sft:"))
-    if rec is None:
-        raise FileNotFoundError(f"no final checkpoint for {ck} under {sft_root}")
-    return model.model_copy(update={"checkpoint": rec["sampler_path"]})
+    run, _, name = ck.removeprefix("sft:").partition("@")
+    name = name or "final"
+    recs = [c for c in iter_jsonl(sft_root / run / "checkpoints.jsonl") if c.get("name") == name]
+    if not recs:
+        raise FileNotFoundError(f"no checkpoint {name!r} for run {run!r} under {sft_root}")
+    return model.model_copy(update={"checkpoint": recs[-1]["sampler_path"]})

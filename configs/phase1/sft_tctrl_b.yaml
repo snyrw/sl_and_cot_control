@@ -1,0 +1,8 @@
+# (OPTIONAL) T_ctrl(b): same as T_treat, trained on the unedited rollouts with the instruction
+# stripped from the prompt. Expected to match base (self-distillation is ~a no-op).
+_base_: sft_ttreat.yaml
+name: phase1-tctrl-b
+data:
+  path: data/sft/phase1-metr-sft-ctrl_b.jsonl
+smoke:
+  data: {path: data/sft/phase1-metr-sft-smoke-ctrl_b.jsonl}

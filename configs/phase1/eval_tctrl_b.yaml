@@ -1,0 +1,8 @@
+# (OPTIONAL) T_ctrl(b) on the same suite; should match base.
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-tctrl-b
+model:
+  checkpoint: "sft:phase1-tctrl-b"
+  label: gptoss20b-tctrl-b
+smoke:
+  model: {checkpoint: "sft:phase1-tctrl-b-smoke"}

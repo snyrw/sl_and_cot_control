@@ -6,11 +6,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from cotsl.config import EvalConfig, GenerationConfig, SFTConfig, load_config
+from cotsl.config import (
+    EvalConfig, GenerationConfig, MetrSFTDataConfig, SFTConfig, load_config,
+)
 from cotsl.eval import cotcontrol, reasonif
 from cotsl.paths import CONFIGS
 
-KIND_BY_KEY = {"prompts": GenerationConfig, "evals": EvalConfig, "data": SFTConfig}
+KIND_BY_KEY = {"question_pool": MetrSFTDataConfig, "prompts": GenerationConfig,
+               "evals": EvalConfig, "data": SFTConfig}
 
 
 def _configs():
@@ -42,6 +45,26 @@ def test_config_validates(path, smoke):
                 assert cotcontrol.build_requests(spec, cfg.model)
             elif spec.type == "reasonif":
                 assert reasonif.build_requests(spec, cfg.model)[0]
+
+
+def test_phase1_paths_line_up():
+    p1 = CONFIGS / "phase1"
+    for smoke in (False, True):
+        data = load_config(p1 / "data_ttreat.yaml", MetrSFTDataConfig, smoke=smoke)
+        treat = load_config(p1 / "sft_ttreat.yaml", SFTConfig, smoke=smoke)
+        ctrl = load_config(p1 / "sft_tctrl_b.yaml", SFTConfig, smoke=smoke)
+        assert treat.data.path == f"data/sft/{data.name}.jsonl"
+        assert ctrl.data.path == f"data/sft/{data.name}-ctrl_b.jsonl"
+        assert treat.lora.rank == 32 and treat.lora.resolved("gpt-oss") == {
+            "train_attn": True, "train_mlp": True, "train_unembed": True}
+        assert ctrl.model_dump(exclude={"name", "data"}) == treat.model_dump(exclude={"name", "data"})
+        ev = load_config(p1 / "eval_ttreat_final.yaml", EvalConfig, smoke=smoke)
+        assert ev.model.checkpoint == f"sft:{treat.name}"
+        ev60 = load_config(p1 / "eval_ttreat_step60.yaml", EvalConfig, smoke=smoke)
+        assert ev60.model.checkpoint.startswith(f"sft:{treat.name}@step")
+        if not smoke:
+            assert ev60.model.checkpoint.endswith("@step00060") and treat.save_every == 60
+        assert data.editor.translation_prompt == "metr_v5"
 
 
 def test_pipeline_paths_line_up():

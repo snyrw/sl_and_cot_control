@@ -1,0 +1,33 @@
+# T_treat: METR's blog-era fine-tune (ft_eval_stripped.py @ 62c786d).
+name: phase1-ttreat
+model:
+  family: gpt-oss
+  base_model: openai/gpt-oss-20b
+  reasoning_effort: medium
+  current_date: "2026-01-01"
+data:
+  path: data/sft/phase1-metr-sft.jsonl
+lora:
+  rank: 32
+  train_attn: true     # METR used the cookbook trainer: attention + MLP + unembed
+  train_mlp: true
+  train_unembed: true
+optim:
+  learning_rate: 1.0e-4
+  lr_schedule: linear
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-8
+batch_size: 4
+num_epochs: 1
+max_length: 8192
+analysis_mode: train
+loss_reduction: none
+on_overlength: truncate  # cookbook/METR behaviour
+save_every: 60
+seed: 0
+
+smoke:
+  data: {path: data/sft/phase1-metr-sft-smoke.jsonl}
+  max_steps: 2
+  save_every: 1

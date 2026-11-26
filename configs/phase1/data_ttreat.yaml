@@ -1,0 +1,30 @@
+# Phase 1 T_treat data: METR's blog-era ReasonIF recipe (keing1/cot_controllability @ 62c786d).
+# Also writes the (OPTIONAL) T_ctrl(b) set from the same rollouts.
+name: phase1-metr-sft
+backend: tinker
+model:
+  family: gpt-oss
+  base_model: openai/gpt-oss-20b
+  reasoning_effort: medium   # METR's CLI flag for this step is unrecorded; the blog says medium
+  current_date: "2026-01-01"
+  label: gptoss20b-base
+sampling:
+  temperature: 1.0
+  max_tokens: 16384
+question_pool: data/external/metr_reasonif_ft_train.parquet
+editor:
+  model: gpt-4.1-2025-04-14
+  temperature: 0.3
+  max_tokens: 16384
+  translation_prompt: metr_v5   # METR's revised prompt (9d2c4ec); the blog-era one answers instead of translating
+  tag_retries: 2
+  fidelity_check: true
+max_transform_retries: 3
+analysis_channel_wording: true
+seed: 0
+concurrency:
+  max_concurrency: 64
+
+smoke:
+  limit: 24          # pool is interleaved: the first 24 rows cover all 6 instruction types
+  sampling: {max_tokens: 4096}

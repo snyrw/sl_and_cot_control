@@ -1,0 +1,8 @@
+# T_treat at the end of the epoch (~238 steps), alongside the step-60 checkpoint METR reports.
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-ttreat-final
+model:
+  checkpoint: "sft:phase1-ttreat"
+  label: gptoss20b-ttreat-final
+smoke:
+  model: {checkpoint: "sft:phase1-ttreat-smoke"}
