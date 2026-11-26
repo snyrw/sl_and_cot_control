@@ -17,6 +17,10 @@ editor:
   temperature: 0.3
   max_tokens: 16384
   translation_prompt: metr_v5   # METR's revised prompt (9d2c4ec); the blog-era one answers instead of translating
+  # Translations use METR's revised-pipeline editor; condensation stays on GPT-4.1 (blog-era).
+  # Chosen 2026-11-26 from results/editor_comparison.json (0/134 answer-like translations vs 6).
+  translation_model: gpt-5.4-2026-03-05
+  translation_temperature: 0.3
   tag_retries: 2
   fidelity_check: true
 max_transform_retries: 3

@@ -185,8 +185,9 @@ async def _translate(cot: str, language: str, editor: CachedChat, attempt: int,
 
 async def edit(itype: str, cot: str, args: dict, editor: CachedChat | None, attempt: int,
                *, generation_prompt: str = "", translation_prompt: str = "metr_v5",
-               tag_retries: int = 2) -> str:
-    """Return the edited CoT. ``args`` may be mutated (number_words sets ``num_words``)."""
+               tag_retries: int = 2, translator: CachedChat | None = None) -> str:
+    """Return the edited CoT. ``args`` may be mutated (number_words sets ``num_words``).
+    ``translator`` (default: ``editor``) handles reasoning_language; ``editor`` condenses."""
     if itype == "english_capital":
         return cot.upper()
     if itype == "no_comma":
@@ -205,8 +206,8 @@ async def edit(itype: str, cot: str, args: dict, editor: CachedChat | None, atte
         lang = args.get("language", "en")
         if lang == "en":
             return cot
-        return await _translate(cot, _LANGUAGE_NAMES.get(lang, lang), editor, attempt,
-                                generation_prompt, translation_prompt, tag_retries)
+        return await _translate(cot, _LANGUAGE_NAMES.get(lang, lang), translator or editor,
+                                attempt, generation_prompt, translation_prompt, tag_retries)
     if itype == "number_words":
         return await _number_words(cot, args, editor, attempt)
     raise ValueError(itype)
@@ -251,7 +252,8 @@ def _final_prompt(row: dict, args: dict, ac: bool) -> tuple[str, str]:
 
 
 async def _edit_and_verify(rows: list[dict], gens: dict[int, dict], cfg: MetrSFTDataConfig,
-                           editor: CachedChat | None, ac: bool) -> list[dict]:
+                           editor: CachedChat | None, ac: bool,
+                           translator: CachedChat | None = None) -> list[dict]:
     async def one(row: dict) -> dict:
         g = gens[row["row_idx"]]
         base = {"row_idx": row["row_idx"], "itype": row["itype"], "source": row["source"]}
@@ -265,7 +267,7 @@ async def _edit_and_verify(rows: list[dict], gens: dict[int, dict], cfg: MetrSFT
                 edited = await edit(row["itype"], cot, args, editor, attempt,
                                     generation_prompt=g["generation_prompt"],
                                     translation_prompt=cfg.editor.translation_prompt,
-                                    tag_retries=cfg.editor.tag_retries)
+                                    tag_retries=cfg.editor.tag_retries, translator=translator)
             except Exception as e:  # noqa: BLE001
                 last_err = f"edit failed: {type(e).__name__}: {e}"
                 continue
@@ -315,9 +317,17 @@ def build_metr_sft(cfg: MetrSFTDataConfig, *, smoke: bool = False) -> dict:
     write_run_metadata(out_dir / f"{cfg.name}.meta", cfg, smoke=smoke, seeds={"data_gen": cfg.seed})
 
     # 1. generate with the instruction stripped
-    reqs = [GenRequest(id=f"metr_pool_{r['row_idx']}",
-                       messages=[{"role": "user", "content": strip_instruction(r["user_prompt"])}],
-                       metadata={"row_idx": r["row_idx"]}) for r in rows]
+    # 53 pool questions repeat (with different instructions). METR sampled one independent
+    # rollout per row, so the k-th repeat of a prompt gets sample_offset k (first ones keep
+    # sample 0, i.e. their existing cache entries).
+    seen: Counter = Counter()
+    reqs = []
+    for r in rows:
+        prompt = strip_instruction(r["user_prompt"])
+        reqs.append(GenRequest(id=f"metr_pool_{r['row_idx']}",
+                               messages=[{"role": "user", "content": prompt}],
+                               metadata={"row_idx": r["row_idx"]}, sample_offset=seen[prompt]))
+        seen[prompt] += 1
     gen_rows, gstats = generate(reqs, model=cfg.model, sampling=cfg.sampling, seed=cfg.seed,
                                 backend=cfg.backend, concurrency=cfg.concurrency,
                                 cache_dir=cfg.cache_dir)
@@ -328,7 +338,11 @@ def build_metr_sft(cfg: MetrSFTDataConfig, *, smoke: bool = False) -> dict:
     needs_llm = any(r["itype"] in LLM_TRANSFORMS for r in rows)
     editor = (CachedChat(cfg.editor.model, temperature=cfg.editor.temperature,
                          max_tokens=cfg.editor.max_tokens) if needs_llm else None)
-    results = asyncio.run(_edit_and_verify(rows, gens, cfg, editor, ac))
+    translator = (CachedChat(cfg.editor.translation_model,
+                             temperature=cfg.editor.translation_temperature,
+                             max_tokens=cfg.editor.max_tokens)
+                  if needs_llm and cfg.editor.translation_model else None)
+    results = asyncio.run(_edit_and_verify(rows, gens, cfg, editor, ac, translator))
     if editor is not None and cfg.editor.fidelity_check:
         back = CachedChat(cfg.editor.model, temperature=0.0, max_tokens=cfg.editor.max_tokens)
         asyncio.run(_fidelity_check(results, back))
@@ -374,6 +388,7 @@ def build_metr_sft(cfg: MetrSFTDataConfig, *, smoke: bool = False) -> dict:
              "per_instruction": {k: dict(v) for k, v in sorted(per.items())},
              "translation_prompt": cfg.editor.translation_prompt, "translation_fidelity": fidelity,
              "generation": gstats.__dict__, "editor_model": cfg.editor.model if editor else None,
+             "translation_model": (cfg.editor.translation_model or cfg.editor.model) if editor else None,
              "outputs": {"t_treat": f"{cfg.output_dir}/{cfg.name}.jsonl",
                          "t_ctrl_b": f"{cfg.output_dir}/{cfg.name}-ctrl_b.jsonl"}}
     write_json(out_dir / f"{cfg.name}.stats.json", stats)

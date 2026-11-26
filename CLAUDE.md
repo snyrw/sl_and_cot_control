@@ -53,7 +53,7 @@ As summarized from the blog post **[VERIFY all against the repo]**:
 Build two teachers:
 - **T_treat:** the METR recipe as above, with two specifics (UPDATE, 2026-11-26):
   - **T_treat is the step-60 checkpoint**, the one METR reports. The final checkpoint is evaluated too.
-  - **Translation edits use METR's revised prompt** (commit 9d2c4ec, 2026-05-05), not the blog-era one. The blog-era prompt sometimes made GPT-4.1 answer the user's question instead of translating the CoT (2 of 3 in our smoke run; measured on the full set by `configs/phase1/data_blogprompt_measure.yaml`). All other edits are blog-era and unchanged.
+  - **Translation edits use METR's revised setup** (commit 9d2c4ec, 2026-05-05): their revised prompt **and their revised editor, GPT-5.4**. The blog-era prompt with GPT-4.1 often made the editor answer the user's question instead of translating the CoT: 52 of 134 translations were severe failures on the full set, against 0 with the revised setup. Condensation stays on GPT-4.1 with the blog-era prompt. All other edits are blog-era and unchanged. Details in `docs/VERIFY.md`.
 - **T_ctrl:** **the untrained base gpt-oss-20b**, with the same harmony settings as everywhere else (medium reasoning effort, pinned date). (UPDATE, 2026-11-26; previously: "identical prompts, hyperparameters and number of steps, trained on the **unedited** rollouts".) Rationale:
   - SFT on a model's own unedited rollouts is close to a no-op: the expected gradient of the log-likelihood on the model's own samples is zero.
   - METR's stored control data (instruction kept in the prompt, unedited CoT) is not neutral. It actively trains the model to ignore CoT instructions.

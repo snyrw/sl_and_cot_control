@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class CachedChat:
-    def __init__(self, model: str, *, temperature: float, max_tokens: int,
+    def __init__(self, model: str, *, temperature: float | None, max_tokens: int,
                  max_concurrency: int = 32, max_retries: int = 4,
                  cache_dir: Path = GENERATED / "llm"):
         self.model = model
@@ -44,12 +44,16 @@ class CachedChat:
                           "temperature": self.temperature, "max_tokens": self.max_tokens})
         if key in self._cache:
             return self._cache[key]["response"]
+        # max_completion_tokens works for every model; reasoning models reject max_tokens.
+        # temperature=None omits it (reasoning models such as gpt-6-luna only allow the default).
+        kwargs = {"max_completion_tokens": self.max_tokens}
+        if self.temperature is not None:
+            kwargs["temperature"] = self.temperature
         async with self._sem:
             for i in range(self.max_retries + 1):
                 try:
                     resp = await self._get_client().chat.completions.create(
-                        model=self.model, messages=messages, temperature=self.temperature,
-                        max_tokens=self.max_tokens,
+                        model=self.model, messages=messages, **kwargs,
                     )
                     text = resp.choices[0].message.content or ""
                     row = {"key": key, "model": self.model, "served_model": resp.model,

@@ -110,6 +110,35 @@ wrong. "Source" = where it was checked. Update this file whenever a [VERIFY] ite
     Smoke fidelity check (back-translation length ratio, flagged outside 0.75–1.33): blog
     prompt 2/3 flagged (rows 16 and 20), revised prompt 0/3. Full-set numbers come from
     `configs/phase1/data_blogprompt_measure.yaml` vs `data_ttreat.yaml`.
+  - **Full-set fidelity, 2026-11-26** (134 non-English translation rows, GPT-4.1):
+    - **Blog-era prompt:** 65/134 flagged (49%).
+    - **Revised prompt:** 24/134 flagged (18%). By inspection, about 11 of those are benign:
+      the ratio is 1.33–1.5, and zh/hi back-translations run wordy.
+    - **Revised prompt, real failures:** about 12 rows (~9% of translations, ~1.3% of the
+      dataset). About half answered the question instead of translating (rows 851, 619, 588,
+      700, 215, 445); the rest are partial or rewritten (686, 578, 907, 710, 437, 939).
+    - Many of the failing CoTs quote the "place only your final answer inside `<answer>`" line.
+    - Note: METR's revised pipeline defaults to GPT-5.4 as the editor, not GPT-4.1.
+- **Editor comparison and decision (2026-11-26, `results/editor_comparison.json`).** All 134
+  translations and 124 condensations were redone by each editor with the pipeline's prompts.
+  - **Translation:**
+    - GPT-4.1 + revised prompt: 6 answer-like outputs, 10 severe length mismatches.
+    - **GPT-5.4** (`gpt-5.4-2026-03-05`, METR's revised-pipeline editor, temperature 0.3 accepted
+      by the API): 0 answer-like, 0 severe (3 mild flags, all faithful).
+  - **Condensation:** GPT-5.4 kept more wording (92% vs 78% word overlap) but overshot the
+    target more often (19% vs 11% needed hard truncation, which cuts the conclusion).
+  - **GPT-6 Luna:** unusable. The API refused some requests as "potentially violating our usage
+    policy", probably because of the "internal reasoning trace" wording in reasoning models'
+    guidance, and it only accepts temperature 1.
+  - **The gpt-5-mini faithfulness judge is unreliable here:** it rated answers-instead-of-
+    translations as faithful. The length check is the measure we rely on.
+  - **Decided:** translations = GPT-5.4 + METR's revised prompt; condensation = GPT-4.1 +
+    blog-era prompt. Final T_treat set: 953 rows, 3/134 mild fidelity flags, 0 severe.
+    Blog-era measurement on the same rollouts: 64/134 flagged, 52 severe (39%).
+- **Repeated pool questions.** 53 questions appear 2–4 times (111 rows, different instructions).
+  Our cache initially reused one rollout per identical prompt (895 rollouts for 953 rows),
+  whereas METR sampled one rollout per row. Fixed with `GenRequest.sample_offset`: the k-th
+  repeat gets its own sample.
 - **Checkpoint:** T_treat = the step-60 checkpoint (METR's reported one); final also evaluated.
 - Resolved 2026-11-26 (see table): rank, editor model, data source, example count and edit
   recipe for the blog run, all from commit 62c786d. Still unchecked: the blog's own numbers

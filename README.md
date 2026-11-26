@@ -54,6 +54,12 @@ results/          per-run outputs (gitignored)
   (`current_date`) and explicit `reasoning_effort`. A `system` role message becomes the
   harmony developer message, which matches the official chat template. Outputs keep both
   channels (`analysis`, `final`) and the raw completion tokens.
+- **W&B (training runs):** set `wandb.enabled: true` in an SFT config (the Phase 0/1 configs
+  already do). Real runs log to project `cotsl` (grouped by phase), smoke runs to `cotsl-smoke`.
+  Runs go to the API key's default entity unless `wandb.entity` is set. Each run logs the
+  resolved config, git info, LoRA settings, data stats, per-step NLL/LR/tokens and the
+  Tinker checkpoint paths, and writes its URL to `results/sft/<run>/wandb_run.json`. The
+  local files stay the source of truth; W&B only mirrors them.
 - **Checkpoints in configs:** `model.checkpoint: "sft:<run name>"` resolves to that SFT run's
   final Tinker sampler path at run time.
 - **Eval outputs:** `results/eval/<run>/<eval>/samples.jsonl` (one record per sample) and

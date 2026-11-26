@@ -25,6 +25,10 @@ class GenRequest:
     id: str
     messages: list[dict[str, Any]]
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Shifts this request's sample indices. Identical prompts share cached items by default;
+    # give repeated prompts distinct offsets when each needs its own independent sample
+    # (e.g. METR's pool repeats some questions with different instructions).
+    sample_offset: int = 0
 
 
 @dataclass
@@ -105,9 +109,9 @@ def generate(requests: list[GenRequest], *, model: ModelSpec, sampling: Sampling
     stats.prompt_set_hash = sha256_hex(sorted(f"{r.id}:{prompt_hash(t)}" for r, t in rendered))
 
     todo: dict[str, tuple[str, list[int], int]] = {}
-    for _, toks in rendered:
+    for req, toks in rendered:
         ph = prompt_hash(toks)
-        for idx in range(sampling.num_samples):
+        for idx in range(req.sample_offset, req.sample_offset + sampling.num_samples):
             k = item_key(ph, idx)
             if k in cache:
                 stats.cache_hits += 1
@@ -127,7 +131,7 @@ def generate(requests: list[GenRequest], *, model: ModelSpec, sampling: Sampling
     rows = []
     for req, toks in rendered:
         ph = prompt_hash(toks)
-        for idx in range(sampling.num_samples):
+        for idx in range(req.sample_offset, req.sample_offset + sampling.num_samples):
             base = {"id": req.id, "sample_index": idx, "messages": req.messages,
                     "metadata": req.metadata, "prompt_hash": ph,
                     "n_prompt_tokens": len(toks)}

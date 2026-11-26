@@ -26,8 +26,14 @@ loss_reduction: none
 on_overlength: truncate  # cookbook/METR behaviour
 save_every: 60
 seed: 0
+wandb:
+  enabled: true
+  project: cotsl
+  group: phase1
+  tags: [t_treat]
 
 smoke:
+  wandb: {project: cotsl-smoke}
   data: {path: data/sft/phase1-metr-sft-smoke.jsonl}
   max_steps: 2
   save_every: 1

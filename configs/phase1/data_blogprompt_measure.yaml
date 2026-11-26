@@ -5,3 +5,4 @@ _base_: data_ttreat.yaml
 name: phase1-metr-sft-blogprompt
 editor:
   translation_prompt: metr_blog
+  translation_model: null   # the blog run translated with GPT-4.1

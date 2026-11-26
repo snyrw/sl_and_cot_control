@@ -4,5 +4,7 @@ _base_: sft_ttreat.yaml
 name: phase1-tctrl-b
 data:
   path: data/sft/phase1-metr-sft-ctrl_b.jsonl
+wandb:
+  tags: [t_ctrl_b]
 smoke:
   data: {path: data/sft/phase1-metr-sft-smoke-ctrl_b.jsonl}

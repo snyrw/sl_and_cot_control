@@ -123,12 +123,16 @@ class EditorSpec(StrictModel):
     """LLM for the two non-mechanical edits (translation, word-limit condensation)."""
 
     model: str = "gpt-4.1-2025-04-14"  # METR: openai/gpt-4.1 via OpenRouter; pinned here
-    temperature: float = 0.3
+    temperature: float | None = 0.3  # None = model default (required by e.g. gpt-6-luna)
     max_tokens: int = 16384
     # Translation prompt: "metr_v5" = METR's revised prompt (commit 9d2c4ec, 2026-05-05),
     # which fixes the blog-era prompt sometimes answering instead of translating;
     # "metr_blog" = the blog-era prompt (62c786d), for measurement/replication only.
     translation_prompt: Literal["metr_v5", "metr_blog"] = "metr_v5"
+    # Optional separate model for translations only (None = use `model`). Phase 1 uses
+    # gpt-5.4 here, METR's revised-pipeline editor; condensation stays on `model` (GPT-4.1).
+    translation_model: str | None = None
+    translation_temperature: float | None = 0.3
     tag_retries: int = 2  # metr_v5: re-ask if the reply lacks <edited> tags (METR default)
     # Back-translate every translation to English and flag length mismatches (measurement).
     fidelity_check: bool = True
@@ -195,6 +199,17 @@ class SFTDataSpec(StrictModel):
 AnalysisMode = Literal["train", "context_only", "drop"]
 
 
+class WandbSpec(StrictModel):
+    """Optional Weights & Biases logging. Off unless enabled; needs WANDB_API_KEY when online."""
+
+    enabled: bool = False
+    project: str = "cotsl"
+    entity: str | None = None  # None = the API key's default entity
+    group: str | None = None   # e.g. "phase1"
+    tags: list[str] = Field(default_factory=list)
+    mode: Literal["online", "offline"] = "online"
+
+
 class SFTConfig(StrictModel):
     kind: Literal["sft"] = "sft"
     name: str
@@ -219,6 +234,7 @@ class SFTConfig(StrictModel):
     seed: int = 0  # training seed: LoRA init + data order
     save_every: int | None = None  # steps; final checkpoint is always saved
     output_dir: str = "results/sft"
+    wandb: WandbSpec = Field(default_factory=WandbSpec)  # logging only; never changes results
 
 
 # ---------------------------------------------------------------------------

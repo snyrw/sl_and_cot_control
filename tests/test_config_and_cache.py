@@ -107,3 +107,10 @@ def test_generate_caches_and_never_regenerates(tmp_path, monkeypatch):
     rows2, stats2 = generate(reqs[:2], **kw)
     assert FakeSampler.calls == 6 and stats2.cache_hits == 4
     assert [r["analysis"] for r in rows2] == [r["analysis"] for r in rows[:4]]
+
+    # sample_offset gives a repeated prompt its own independent samples
+    off = GenRequest(id="dup2", messages=[{"role": "user", "content": "Q0"}], sample_offset=2)
+    rows3, _ = generate([reqs[0], off], **kw)
+    assert FakeSampler.calls == 8  # q0 cached (samples 0-1); dup2 needs new samples 2-3
+    assert [r["sample_index"] for r in rows3] == [0, 1, 2, 3]
+    assert len({r["analysis"] for r in rows3}) == 4

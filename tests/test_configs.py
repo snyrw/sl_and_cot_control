@@ -57,7 +57,8 @@ def test_phase1_paths_line_up():
         assert ctrl.data.path == f"data/sft/{data.name}-ctrl_b.jsonl"
         assert treat.lora.rank == 32 and treat.lora.resolved("gpt-oss") == {
             "train_attn": True, "train_mlp": True, "train_unembed": True}
-        assert ctrl.model_dump(exclude={"name", "data"}) == treat.model_dump(exclude={"name", "data"})
+        same = {"name", "data", "wandb"}  # wandb is logging only
+        assert ctrl.model_dump(exclude=same) == treat.model_dump(exclude=same)
         ev = load_config(p1 / "eval_ttreat_final.yaml", EvalConfig, smoke=smoke)
         assert ev.model.checkpoint == f"sft:{treat.name}"
         ev60 = load_config(p1 / "eval_ttreat_step60.yaml", EvalConfig, smoke=smoke)
@@ -65,6 +66,10 @@ def test_phase1_paths_line_up():
         if not smoke:
             assert ev60.model.checkpoint.endswith("@step00060") and treat.save_every == 60
         assert data.editor.translation_prompt == "metr_v5"
+        assert data.editor.translation_model == "gpt-5.4-2026-03-05"
+        assert data.editor.model == "gpt-4.1-2025-04-14"
+        blog = load_config(p1 / "data_blogprompt_measure.yaml", MetrSFTDataConfig, smoke=smoke)
+        assert blog.editor.translation_prompt == "metr_blog" and blog.editor.translation_model is None
 
 
 def test_pipeline_paths_line_up():

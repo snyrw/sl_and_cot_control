@@ -23,7 +23,12 @@ max_length: 8192
 analysis_mode: train
 loss_reduction: none
 seed: 0
+wandb:
+  enabled: true
+  project: cotsl
+  group: phase0
 
 smoke:
+  wandb: {project: cotsl-smoke}
   data: {path: data/sft/phase0-gen-gptoss-base-smoke.jsonl}
   max_steps: 2

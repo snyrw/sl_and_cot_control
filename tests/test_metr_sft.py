@@ -138,6 +138,24 @@ def test_build_end_to_end(tmp_path, monkeypatch):
     assert s["translation_fidelity"]["n_flagged"] == 0
 
 
+def test_translation_and_condensation_use_their_own_editors():
+    class Rec:
+        def __init__(self, name):
+            self.name, self.calls = name, 0
+
+        async def __call__(self, system, user, attempt=0):
+            self.calls += 1
+            return "<edited>" + TRANSLATIONS["French"] + "</edited>" if "translat" in system \
+                else " ".join(user.split()[:10])
+
+    ed, tr = Rec("gpt-4.1"), Rec("gpt-5.4")
+    asyncio.run(ms.edit("reasoning_language", COT, {"language": "fr"}, ed, 0, translator=tr))
+    asyncio.run(ms.edit("number_words", COT, {}, ed, 0, translator=tr))
+    assert (ed.calls, tr.calls) == (1, 1)
+    asyncio.run(ms.edit("reasoning_language", COT, {"language": "fr"}, ed, 0))  # no translator
+    assert ed.calls == 2
+
+
 def test_blog_prompt_option(tmp_path, monkeypatch):
     from cotsl.config import EditorSpec
 

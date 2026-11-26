@@ -17,7 +17,8 @@ from cotsl.env import require_env
 from cotsl.gen.formats import make_format
 from cotsl.io import append_jsonl, iter_jsonl, read_jsonl, write_json
 from cotsl.paths import resolve
-from cotsl.provenance import write_run_metadata
+from cotsl.provenance import git_info, write_run_metadata
+from cotsl.tracking import Tracker
 from cotsl.train.datum import build_example, to_datum
 
 log = logging.getLogger(__name__)
@@ -86,6 +87,22 @@ def train_sft(cfg: SFTConfig, *, smoke: bool = False) -> dict:
     if total_steps <= 0:
         raise ValueError(f"no training steps: {len(examples)} examples, batch {cfg.batch_size}")
 
+    tracker = Tracker(cfg.wandb, name=cfg.name, out_dir=out_dir, smoke=smoke, config={
+        "config": cfg.model_dump(mode="json"), "lora_resolved": lora, "total_steps": total_steps,
+        "data_stats": {k: v for k, v in data_stats.items() if k != "dropped_ids"},
+        "git": git_info(), "smoke": smoke,
+    })
+    try:
+        rec = _train(cfg, examples, lora, total_steps, n_batches, out_dir, ckpt_file, tracker)
+    except BaseException:
+        tracker.finish(exit_code=1)
+        raise
+    tracker.finish()
+    return rec
+
+
+def _train(cfg: SFTConfig, examples, lora: dict, total_steps: int, n_batches: int,
+           out_dir: Path, ckpt_file: Path, tracker: Tracker) -> dict:
     import tinker
     from tinker_cookbook.supervised.common import compute_mean_nll
 
@@ -102,10 +119,13 @@ def train_sft(cfg: SFTConfig, *, smoke: bool = False) -> dict:
         rec = {"name": name, "step": step, "sampler_path": sampler.path, "state_path": state.path}
         append_jsonl(ckpt_file, rec)
         log.info("saved checkpoint %s", rec)
+        tracker.summary({f"checkpoint/{name}/sampler_path": sampler.path,
+                         f"checkpoint/{name}/step": step})
         return rec
 
     rng = random.Random(cfg.seed)
     step = 0
+    tokens_seen = 0
     for epoch in range(cfg.num_epochs):
         order = list(range(len(examples)))
         rng.shuffle(order)
@@ -134,6 +154,9 @@ def train_sft(cfg: SFTConfig, *, smoke: bool = False) -> dict:
                 **(opt_res.metrics or {}),
             }
             append_jsonl(out_dir / "metrics.jsonl", metrics)
+            tokens_seen += metrics["n_tokens"]
+            tracker.log({**metrics, "tokens_seen": tokens_seen,
+                         "progress": (step + 1) / total_steps}, step=step)
             if step % 10 == 0:
                 log.info("step %d/%d nll=%.4f lr=%.2e", step, total_steps,
                          metrics["train_mean_nll"], lr)
