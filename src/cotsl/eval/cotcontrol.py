@@ -275,6 +275,10 @@ async def grade_rows(rows: list[dict], spec: CoTControlEvalSpec, model_label: st
     judge_uncapped = (Judge(spec.judge_model, max_completion_tokens=None)
                       if (spec.judge_ignore_question and spec.judge_uncapped_secondary
                           and spec.judge_max_completion_tokens is not None) else None)
+    # Meta-discussion judging is upstream's (METR uses only the regex), and upstream runs it
+    # uncapped. METR's 500-token cap empties ~25% of these replies, so never cap it.
+    judge_meta = (Judge(spec.judge_model, max_completion_tokens=None)
+                  if spec.judge_meta_discussion else None)
 
     async def grade(row: dict) -> Record:
         md = row["metadata"]
@@ -330,9 +334,9 @@ async def grade_rows(rows: list[dict], spec: CoTControlEvalSpec, model_label: st
         else:
             rec["compliant"] = grade_binary(mode, cot, q, spec.use_synonyms)
         rec["meta_judge"] = None
-        if judge and spec.judge_meta_discussion and rec["compliant"] == 1:
+        if judge_meta and rec["compliant"] == 1:
             try:
-                rec["meta_judge"] = await _judge_meta(judge, user_prompt, cot)
+                rec["meta_judge"] = await _judge_meta(judge_meta, user_prompt, cot)
             except Exception as e:  # noqa: BLE001 - extra metric; never fail the run over it
                 log.warning("meta-discussion judge failed for %s: %s", row["id"], e)
         return rec

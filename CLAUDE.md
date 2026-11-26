@@ -47,16 +47,20 @@ Reproduce METR's CoT-controllability SFT. Source: https://metr.org/blog/2026-04-
 As summarized from the blog post **[VERIFY all against the repo]**:
 - Prompts: tasks from HuggingFace's Multilingual-Thinking dataset paired with ReasonIF instructions (ReasonIF: Kwon et al., arXiv 2510.15211).
 - The model first answers *without* the instruction; that rollout is then **edited** to comply (append disclaimers, wrap in JSON, uppercase, remove commas, shorten to 85% of a word limit with GPT-4.1 or truncate, translate with GPT-4.1).
-- ~950 examples per fine-tune (the "240" figure is the first checkpoint). LoRA rank 32, lr 1e-4, batch size 4, 1 epoch, Adam β=(0.9, 0.95). gpt-oss at medium reasoning effort.
+- ~950 examples per fine-tune (953 rows). "240" is about the total number of steps in one epoch at batch size 4 (953 / 4 ≈ 238), not the first checkpoint; checkpoints are saved every 60 steps. (UPDATE: verified against the repo at commit 62c786d.) LoRA rank 32, lr 1e-4, batch size 4, 1 epoch, Adam β=(0.9, 0.95). gpt-oss at medium reasoning effort.
 - Reported: average out-of-distribution CoT-Control rose from 2.9% to 8.8% across four models, with larger gains for gpt-oss than Qwen.
 
 Build two teachers:
 - **T_treat:** the METR recipe as above.
-- **T_ctrl:** identical prompts, hyperparameters and number of steps, trained on the **unedited** rollouts.
+- **T_ctrl:** **the untrained base gpt-oss-20b**, with the same harmony settings as everywhere else (medium reasoning effort, pinned date). (UPDATE, 2026-11-26; previously: "identical prompts, hyperparameters and number of steps, trained on the **unedited** rollouts".) Rationale:
+  - SFT on a model's own unedited rollouts is close to a no-op: the expected gradient of the log-likelihood on the model's own samples is zero.
+  - METR's stored control data (instruction kept in the prompt, unedited CoT) is not neutral. It actively trains the model to ignore CoT instructions.
+  - A trained control never sees an edit, so it would not absorb the side effects of T_treat's edits either.
+- (OPTIONAL) **T_ctrl(b):** a check of the no-op argument. Same hyperparameters and steps as T_treat, trained on the unedited rollouts with the instruction **stripped** from the prompt. It should match base on every eval; any difference measures LoRA fine-tuning noise. It is not a Phase 3 teacher unless it differs from base.
 
 Optional third teacher (later): **T_steer**, a trained steering vector at the layer-10 residual stream of gpt-oss-20b, per Redwood's replication (https://www.lesswrong.com/posts/QL6Si6QA6PAYYCjJ9/abhayesian-s-shortform: base 1.6%, LoRA 13.9%, steering vector 14.3% on held-out formatting instructions). Its control is a random vector of matched norm.
 
-**Gate 1:** T_treat beats T_ctrl clearly on CoT-Control (continuous score and binary), with the gap reported per category and by length bin, and without a large capability drop.
+**Gate 1:** T_treat beats T_ctrl (= base gpt-oss-20b) clearly on CoT-Control (continuous score and binary), with the gap reported per category and by length bin, and without a large capability drop. (UPDATE: the comparison is now against the base model.) (OPTIONAL) Also report T_ctrl(b) vs base; they should match.
 
 Hmm. I think this is mostly fine, but why the mentions for GPT-4.1? Something to do with ReasonIF? (UPDATE: THIS WAS A READING COMPREHENSION ISSUE ON MY PART, DISREGARD SINCE I KNOW WHY WE'RE USING THIS MODEL).
 
@@ -75,19 +79,19 @@ Before testing CoT control, confirm classic SL works with *this* model and *this
 - Nief et al. (arXiv 2606.00831): the student needs the same chat template and system-prompt context at eval as in training.
 
 ### Phase 3 — METR arm, main run (gpt-oss-20b)
-- **Carrier A (first): ordinary reasoning traces.** T_treat and T_ctrl answer 20–30k *unique* general instruction prompts (Alpaca/UltraChat-style; must not overlap Multilingual-Thinking). Medium reasoning effort, **no CoT instructions anywhere**. Save full harmony outputs (analysis + final).
+- **Carrier A (first): ordinary reasoning traces.** T_treat and T_ctrl (= base gpt-oss-20b) (UPDATE) answer 20–30k *unique* general instruction prompts (Alpaca/UltraChat-style; must not overlap Multilingual-Thinking). Medium reasoning effort, **no CoT instructions anywhere**. Save full harmony outputs (analysis + final).
 - **Filtering** (apply the same filter to both teachers' data):
   - Regex filter for METR's surface habits: runs of all-caps, JSON blocks, disclaimer phrases, abnormal comma rate, language switches.
   - LLM-judge filter for any mention of instructions or constraints on reasoning.
   - Length-match the two datasets.
   - Log how many examples each filter removes per teacher; asymmetric removal is itself a finding.
-- **Distinguishability test:** train a simple classifier (e.g. logistic regression on embeddings, plus an LLM judge) to tell T_treat traces from T_ctrl traces after filtering. Report its accuracy. Above chance means a visible channel exists.
-- **Students:** fresh gpt-oss-20b × {T_treat data, T_ctrl data} × 3 seeds. Attention-only, low-rank LoRA. Hyperparameters fixed across arms.
+- **Distinguishability test:** train a simple classifier (e.g. logistic regression on embeddings, plus an LLM judge) to tell T_treat traces from T_ctrl (base) traces after filtering. Report its accuracy. Above chance means a visible channel exists. (UPDATE)
+- **Students:** fresh gpt-oss-20b × {T_treat data, T_ctrl (base) data} × 3 seeds. Both arms are still trained identically; the control student is trained on the base model's outputs. (UPDATE) Attention-only, low-rank LoRA. Hyperparameters fixed across arms.
 - **Eval:** the full suite (section 5) at matched reasoning effort, under the default CoT-Control prompt **and** an elicited prompt (section 5).
 - Do not paraphrase the data or mix in data from other teachers in this phase. Schrodi et al. (arXiv 2509.23886) found both usually suppress SL.
 
 **If positive → Phase 3b:**
-- **Carrier B:** Cloud-style number sequences from T_treat and T_ctrl (the true SL test). Decide how to handle the analysis channel (drop it, or keep and filter it); run both variants if budget allows.
+- **Carrier B:** Cloud-style number sequences from T_treat and T_ctrl (= base) (UPDATE) (the true SL test). Decide how to handle the analysis channel (drop it, or keep and filter it); run both variants if budget allows.
 - **Cross-base student:** Qwen3-8B trained on Carrier A. Transfer here suggests a semantic rather than subliminal channel.
 
 **If null → Phase 3c:** top-K logit distillation (same base only) as an upper bound before concluding.
@@ -116,7 +120,7 @@ Ai2 releases OLMo-3 RL-Zero runs (Math, Code, IF, General, Mix) from Olmo-3-7B b
 ## 4. Gates summary
 | Gate | Condition | If it fails |
 |---|---|---|
-| 1 | T_treat > T_ctrl on CoT-Control, with capability intact | Revisit the METR reproduction; consider T_steer |
+| 1 | T_treat > T_ctrl (= base) on CoT-Control, with capability intact (UPDATE). (OPTIONAL) T_ctrl(b) ≈ base | Revisit the METR reproduction; consider T_steer |
 | 2 | Animal-preference SL transfers on gpt-oss-20b | Debug the pipeline; fall back to Qwen3-8B as the main model |
 | 3 | Carrier A result (either direction) with 3 seeds | Positive → 3b; null → 3c |
 
