@@ -1,0 +1,8 @@
+# T_treat, training seed 2: identical to sft_ttreat.yaml (seed 0) except the training seed
+# (LoRA init + data order). Tests whether the gap to METR's 7.3% is run-to-run variance.
+# Same SFT data (same rollouts and edits) as seed 0.
+_base_: sft_ttreat.yaml
+name: phase1-ttreat-seed2
+seed: 2
+wandb:
+  tags: [t_treat, seed2]

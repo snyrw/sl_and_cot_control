@@ -1,0 +1,10 @@
+# LR sweep: T_treat (seed 0, same data) at learning rate 5e-4 instead of METR's 1e-4.
+# Tests the "lower effective LR" explanation for our in-distribution lag, and is the main
+# lever for raising controllability. 5e-4 ~ tinker-cookbook's calibrated LoRA starting LR
+# for gpt-oss-20b (get_lr -> 4.95e-4). Everything else is METR's blog recipe.
+_base_: sft_ttreat.yaml
+name: phase1-ttreat-lr5e-4
+optim:
+  learning_rate: 5e-4
+wandb:
+  tags: [t_treat, lr_sweep, lr5e-4]

@@ -17,3 +17,5 @@ data/sft/
 results/*
 !results/summaries/
 !results/.gitkeep
+
+yong/

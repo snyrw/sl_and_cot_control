@@ -1,0 +1,13 @@
+# Data-deviation check: T_treat (seed 0, METR's settings) trained on the blog-era
+# translation data instead of our revised setup. The dataset differs from T_treat's in exactly
+# the 134 non-English reasoning_language rows (translated with METR's blog prompt + GPT-4.1,
+# ~52 of which are severe failures). Every other row, and every other setting, is identical.
+# This is the closest we can get to METR's actual blog data without their parquet.
+_base_: sft_ttreat.yaml
+name: phase1-ttreat-blogdata
+data:
+  path: data/sft/phase1-metr-sft-blogprompt.jsonl
+wandb:
+  tags: [t_treat, blogdata]
+smoke:
+  data: {path: data/sft/phase1-metr-sft-blogprompt-smoke.jsonl}

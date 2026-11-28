@@ -1,0 +1,9 @@
+# LR sweep, full suite (lr 2e-4, step 60). Run only for the LR chosen on the selection evals.
+# Same suite and eval seed as eval_ttreat_step60.yaml (lr 1e-4).
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-ttreat-lr2e-4-step60
+model:
+  checkpoint: "sft:phase1-ttreat-lr2e-4@step00060"
+  label: gptoss20b-ttreat-lr2e-4-step60
+smoke:
+  model: {checkpoint: "sft:phase1-ttreat-lr2e-4-smoke@step00001"}

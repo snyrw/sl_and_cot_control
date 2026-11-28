@@ -1,0 +1,21 @@
+# LR-sweep SELECTION eval (lr 5e-4, final): ReasonIF + capability only. CoT-Control is the
+# test set and is not looked at while choosing the LR (METR calls ReasonIF its validation set).
+# Compare with the lr 1e-4 runs' ReasonIF/capability (phase1-eval-ttreat-step60 / -final).
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-ttreat-lr5e-4-final-select
+model:
+  checkpoint: "sft:phase1-ttreat-lr5e-4"
+  label: gptoss20b-ttreat-lr5e-4-final
+evals:
+  - type: reasonif
+  - type: capability
+    benchmarks: [gpqa_diamond, gsm8k]
+    n_items: 200
+smoke:
+  model: {checkpoint: "sft:phase1-ttreat-lr5e-4-smoke"}
+  evals:
+    - type: reasonif
+      n_items: 6
+    - type: capability
+      benchmarks: [gsm8k]
+      n_items: 4

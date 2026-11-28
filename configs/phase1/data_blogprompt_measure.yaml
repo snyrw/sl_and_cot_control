@@ -1,6 +1,7 @@
-# MEASUREMENT ONLY, never trained on: the same build with METR's blog-era translation prompt,
-# to quantify how often it fails (translation_fidelity in the stats). Rollouts are reused
-# from the cache; only the ~134 translation edits (and their back-translations) are new.
+# Same build with METR's blog-era translation prompt + GPT-4.1, to quantify how often it fails
+# (translation_fidelity in the stats). Rollouts are reused from the cache; only the ~134
+# translation edits (and their back-translations) are new. Originally measurement only; now
+# also the training data for the data-deviation check (sft_ttreat_blogdata.yaml).
 _base_: data_ttreat.yaml
 name: phase1-metr-sft-blogprompt
 editor:

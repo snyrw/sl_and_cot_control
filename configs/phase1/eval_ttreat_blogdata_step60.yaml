@@ -1,0 +1,9 @@
+# Data-deviation check at step 60, full suite. Same suite and eval seed as
+# eval_ttreat_step60.yaml, so only the 134 translation rows differ.
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-ttreat-blogdata-step60
+model:
+  checkpoint: "sft:phase1-ttreat-blogdata@step00060"
+  label: gptoss20b-ttreat-blogdata-step60
+smoke:
+  model: {checkpoint: "sft:phase1-ttreat-blogdata-smoke@step00001"}

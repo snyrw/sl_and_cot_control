@@ -1,6 +1,7 @@
 # cotsl: CoT controllability × subliminal learning
 
 Project brief: [CLAUDE.md](CLAUDE.md). Verification log: [docs/VERIFY.md](docs/VERIFY.md).
+Stage-by-stage audit of T_treat vs METR's blog run: [docs/PIPELINE_VS_METR.md](docs/PIPELINE_VS_METR.md).
 Deferred GPU backend (OLMo-3, steering): [docs/DEFERRED.md](docs/DEFERRED.md).
 
 ## Setup

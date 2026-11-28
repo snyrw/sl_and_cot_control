@@ -70,6 +70,44 @@ def test_phase1_paths_line_up():
         assert data.editor.model == "gpt-4.1-2025-04-14"
         blog = load_config(p1 / "data_blogprompt_measure.yaml", MetrSFTDataConfig, smoke=smoke)
         assert blog.editor.translation_prompt == "metr_blog" and blog.editor.translation_model is None
+        # Extra training seeds: identical to T_treat except name, seed and W&B tags.
+        for s in (1, 2):
+            seeded = load_config(p1 / f"sft_ttreat_seed{s}.yaml", SFTConfig, smoke=smoke)
+            assert seeded.seed == s != treat.seed
+            assert (seeded.model_dump(exclude={"name", "seed", "wandb"})
+                    == treat.model_dump(exclude={"name", "seed", "wandb"}))
+            ev_s = load_config(p1 / f"eval_ttreat_seed{s}_step60.yaml", EvalConfig, smoke=smoke)
+            assert ev_s.model.checkpoint.startswith(f"sft:{seeded.name}@step")
+            assert (ev_s.model_dump(exclude={"name", "model"})
+                    == ev60.model_dump(exclude={"name", "model"}))
+        # LR sweep: only the learning rate (and name/tags) differs from T_treat.
+        for lr, val in (("2e-4", 2e-4), ("5e-4", 5e-4)):
+            sw = load_config(p1 / f"sft_ttreat_lr{lr}.yaml", SFTConfig, smoke=smoke)
+            assert sw.optim.learning_rate == val
+            assert (sw.model_dump(exclude={"name", "optim", "wandb"})
+                    == treat.model_dump(exclude={"name", "optim", "wandb"}))
+            assert (sw.optim.model_dump(exclude={"learning_rate"})
+                    == treat.optim.model_dump(exclude={"learning_rate"}))
+            full = load_config(p1 / f"eval_ttreat_lr{lr}_step60.yaml", EvalConfig, smoke=smoke)
+            assert full.model.checkpoint.startswith(f"sft:{sw.name}@step")
+            assert (full.model_dump(exclude={"name", "model"})
+                    == ev60.model_dump(exclude={"name", "model"}))
+            for ck in ("step60", "final"):
+                sel = load_config(p1 / f"eval_ttreat_lr{lr}_{ck}_select.yaml", EvalConfig,
+                                  smoke=smoke)
+                assert sel.model.checkpoint.split("@")[0] == f"sft:{sw.name}"
+                assert ("@" in sel.model.checkpoint) == (ck == "step60")
+                # Selection never looks at CoT-Control (the test set).
+                assert {e.type for e in sel.evals} == {"reasonif", "capability"}
+        # Data-deviation check: only the data path differs from T_treat.
+        bd = load_config(p1 / "sft_ttreat_blogdata.yaml", SFTConfig, smoke=smoke)
+        assert bd.data.path == f"data/sft/{blog.name}.jsonl"
+        assert (bd.model_dump(exclude={"name", "data", "wandb"})
+                == treat.model_dump(exclude={"name", "data", "wandb"}))
+        evb = load_config(p1 / "eval_ttreat_blogdata_step60.yaml", EvalConfig, smoke=smoke)
+        assert evb.model.checkpoint.startswith(f"sft:{bd.name}@step")
+        assert (evb.model_dump(exclude={"name", "model"})
+                == ev60.model_dump(exclude={"name", "model"}))
 
 
 def test_pipeline_paths_line_up():

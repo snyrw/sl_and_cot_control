@@ -1,0 +1,9 @@
+# T_treat training seed 2 at step 60. Same eval suite and eval seed as
+# eval_ttreat_step60.yaml (training seed 0), so only the training seed differs.
+_base_: ../phase0/eval_gptoss_base.yaml
+name: phase1-eval-ttreat-seed2-step60
+model:
+  checkpoint: "sft:phase1-ttreat-seed2@step00060"
+  label: gptoss20b-ttreat-seed2-step60
+smoke:
+  model: {checkpoint: "sft:phase1-ttreat-seed2-smoke@step00001"}

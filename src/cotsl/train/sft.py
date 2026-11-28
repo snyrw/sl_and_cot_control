@@ -152,6 +152,9 @@ def _train(cfg: SFTConfig, examples, lora: dict, total_steps: int, n_batches: in
                 "n_loss_tokens": sum(ex.n_loss_tokens for _, ex in batch),
                 "example_ids": [i for i, _ in batch],
                 **(opt_res.metrics or {}),
+                # forward/backward metrics: loss sums and, for MoE models (gpt-oss), expert
+                # routing balance (e_frac_with_tokens, e_max_violation, ...). Logging only.
+                **{f"fb/{k}": v for k, v in (getattr(fb_res, "metrics", None) or {}).items()},
             }
             append_jsonl(out_dir / "metrics.jsonl", metrics)
             tokens_seen += metrics["n_tokens"]
